@@ -1,0 +1,521 @@
+/* ==========================================================================
+   ReplyPlex Compose UX
+   --------------------------------------------------------------------------
+   Every rule is scoped to a [data-rpx="..."] attribute that compose-ux.js
+   stamps onto the reply composer only. Nothing outside the composer is
+   touched, so the rest of the app keeps its own styling.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. One scroll surface
+   --------------------------------------------------------------------------
+   The app nested two scroll containers: an `overflow-y-auto` wrapper holding
+   the formatting toolbar + editor + Cc/Bcc, and the editor's own
+   `overflow-y-auto` capped at `min(40vh, 360px)`. Past that cap the wrapper
+   started scrolling too, which carried the toolbar off the top of the card --
+   the "quick tool options go away" problem.
+
+   The wrapper becomes a plain flex column, the editor becomes the only
+   flexible child, and its inline max-height is lifted. Result: exactly one
+   scrollbar, and the toolbar / Cc / Bcc / send bar never move.
+   -------------------------------------------------------------------------- */
+
+/* The card has to fill the composer's dragged height, otherwise releasing the
+   editor's min-height lets the whole stack collapse to its content. */
+[data-rpx="card"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+[data-rpx="wrap"] {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+[data-rpx="pad"] {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding: 10px 12px !important;
+}
+
+[data-rpx="editorbox"] {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+[data-rpx="toolbar"] {
+  flex: 0 0 auto !important;
+}
+
+[data-rpx="editor"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+[data-rpx="ccbcc"] {
+  flex: 0 0 auto !important;
+}
+
+/* A floor for the drag handle. The app allows down to 180px, but the tabs
+   (38) + toolbar (37) + send bar (53) leave the editor about 10px there,
+   which reads as broken. 224px keeps roughly two lines of typing room while
+   giving up as little of the app's drag range as possible -- raise or drop
+   this line to trade typing room against range. */
+[data-rpx="composer"] {
+  min-height: 224px !important;
+  padding: 10px 14px 12px !important;
+}
+
+/* Unopened, the composer is a single bar but still reserves its dragged
+   height. Shrink it to its content so the thread gets that space back. */
+[data-rpx="composer-collapsed"] {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 10px 14px 12px !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Composer card
+   -------------------------------------------------------------------------- */
+
+[data-rpx="card"] {
+  border-radius: 12px !important;
+  box-shadow:
+    0 1px 2px hsl(0 0% 0% / 0.05),
+    0 10px 28px -14px hsl(0 0% 0% / 0.22) !important;
+}
+
+[data-rpx="tabs"] {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Editor
+   -------------------------------------------------------------------------- */
+
+[data-rpx="editorbox"] {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease !important;
+}
+
+/* A real focus state -- previously typing gave no visible affordance. */
+[data-rpx="editorbox"]:focus-within {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.18) !important;
+}
+
+[data-rpx="editor"] {
+  padding: 12px 14px !important;
+  line-height: 1.65 !important;
+  scroll-padding-block: 10px;
+  overscroll-behavior: contain;
+}
+
+/* Keep the caret clear of the toolbar and the Cc row while typing. */
+[data-rpx="editor"] > :first-child { margin-top: 0 !important; }
+[data-rpx="editor"] > :last-child  { margin-bottom: 0 !important; }
+
+[data-rpx="editor"]:empty::before {
+  opacity: 0.72;
+}
+
+/* Slim, self-effacing scrollbar on the one surface that still scrolls. */
+[data-rpx="editor"] { scrollbar-width: thin; }
+[data-rpx="editor"]::-webkit-scrollbar { width: 10px; }
+[data-rpx="editor"]::-webkit-scrollbar-track { background: transparent; }
+[data-rpx="editor"]::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.26);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
+}
+[data-rpx="editor"]:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.45);
+  background-clip: padding-box;
+}
+
+/* --------------------------------------------------------------------------
+   4. Toolbar -- now permanently visible, so make it read as a header
+   -------------------------------------------------------------------------- */
+
+[data-rpx="toolbar"] {
+  gap: 1px !important;
+  padding: 4px 6px !important;
+  background: hsl(var(--muted) / 0.4) !important;
+}
+
+/* Bigger hit targets and a clearer hover than the default. */
+[data-rpx="toolbar"] button {
+  border-radius: 6px !important;
+  transition: background-color 100ms ease, color 100ms ease !important;
+}
+[data-rpx="toolbar"] button:hover:not(:disabled) {
+  background-color: hsl(var(--muted-foreground) / 0.14) !important;
+  color: hsl(var(--foreground)) !important;
+}
+[data-rpx="toolbar"] button:active:not(:disabled) {
+  background-color: hsl(var(--muted-foreground) / 0.22) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Cc / Bcc -- collapsed by default, reclaiming ~44px of typing room
+   -------------------------------------------------------------------------- */
+
+/* No top padding -- the pad wrapper above already supplies the gap, so the
+   editor keeps an even margin whether Cc/Bcc is showing or collapsed. */
+[data-rpx="ccbcc"] {
+  padding: 0 12px 10px !important;
+}
+
+[data-rpx="card"][data-rpx-cc="collapsed"] [data-rpx="ccbcc"] {
+  display: none !important;
+}
+
+/* The toggle injected into the send bar, styled from the app's own tokens. */
+.rpx-cc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.rpx-cc-toggle:hover {
+  background: hsl(var(--muted-foreground) / 0.12);
+  color: hsl(var(--foreground));
+}
+.rpx-cc-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+}
+.rpx-cc-toggle[data-state="on"] {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted-foreground) / 0.1);
+}
+
+/* Dot marks Cc/Bcc that actually hold recipients, so a collapsed row can
+   never hide addresses the reply is going to. */
+.rpx-cc-toggle[data-filled="1"]::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+}
+
+/* --------------------------------------------------------------------------
+   6. Send bar
+   -------------------------------------------------------------------------- */
+
+[data-rpx="footer"] {
+  padding: 8px 10px !important;
+  row-gap: 6px !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. Drag-to-resize handle -- a 6px invisible strip until you find it
+   -------------------------------------------------------------------------- */
+
+[data-rpx="handle"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 3px;
+  border-radius: 9999px;
+  background: hsl(var(--muted-foreground) / 0);
+  transition: background-color 120ms ease;
+  pointer-events: none;
+}
+[data-rpx="handle"]:hover::after {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-rpx="editorbox"],
+  [data-rpx="toolbar"] button,
+  [data-rpx="handle"]::after,
+  .rpx-cc-toggle {
+    transition: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Right sidebar order
+   --------------------------------------------------------------------------
+   Ticket Fields is pulled up to sit directly above Knowledge. `space-y-3`
+   spaces children with `* + *` margins, which follow DOM order and would
+   leave a gap in the wrong place once `order` moves a card -- so the stack
+   becomes a flex column with a real gap and those margins are zeroed.
+   -------------------------------------------------------------------------- */
+
+[data-rpx="sidebar-stack"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+[data-rpx="sidebar-stack"] > * {
+  order: 2;
+  margin-top: 0 !important;
+}
+
+[data-rpx="sidebar-stack"] > [data-rpx-card="first"] {
+  order: 0;
+}
+
+[data-rpx="sidebar-stack"] > [data-rpx-card="fields"] {
+  order: 1;
+}
+
+/* --------------------------------------------------------------------------
+   9. One top bar instead of two
+   --------------------------------------------------------------------------
+   The page stacked a slim 48px app bar (breadcrumb + notifications + avatar,
+   full width across the thread and the customer panel) on top of a 65px
+   ticket bar (title, prev/next, assignee, tags, status, more) that spanned
+   only the thread column.
+
+   The app bar is the one that stays: it keeps its height, its full width and
+   its notifications and avatar hard right. The breadcrumb goes, and the
+   ticket bar is lifted out of the section and laid into the empty left part
+   of that row -- so one slim full-width bar carries everything and the thread
+   gets the ticket bar's 65px back.
+
+   Nothing is reparented: React owns both bars and would throw on unmount if
+   their nodes moved, so this is absolute positioning plus `order` only.
+
+   `--rpx-topbar-actions-w` is the measured width of the notifications and
+   avatar group, so the ticket bar always stops just short of it however that
+   group grows (a longer avatar, a badge on the bell).
+
+   Scoped to 1024px and up. Narrower than that the ticket bar's controls need
+   the second row to wrap onto, and the app's own two-bar layout is kept.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  html[data-rpx-page="ticket"] [data-rpx="maincol"] {
+    position: relative !important;
+  }
+
+  html[data-rpx-page="ticket"] [data-rpx="crumbs"] {
+    display: none !important;
+  }
+
+  html[data-rpx-page="ticket"] [data-rpx="tickethead"] {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: calc(var(--rpx-topbar-actions-w, 72px) + 24px) !important;
+    height: var(--rpx-topbar-h, 48px) !important;
+    z-index: 25 !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    padding: 0 12px !important;
+    /* the app bar underneath already draws the bar's surface and its rule */
+    background: transparent !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Title and the tag chips under it become one row, so the bar stays 48px
+     even on a tagged ticket, and the title truncates rather than pushing the
+     controls out of reach. */
+  html[data-rpx-page="ticket"] [data-rpx="tickethead-title"] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+  }
+
+  html[data-rpx-page="ticket"] [data-rpx="tickethead-title"] > * {
+    margin-top: 0 !important;
+    min-width: 0 !important;
+  }
+
+  html[data-rpx-page="ticket"] [data-rpx="tickethead-title"] h2 {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Every control keeps its size and its place -- they just stop wrapping. */
+  html[data-rpx-page="ticket"] [data-rpx="tickethead-actions"] {
+    flex-wrap: nowrap !important;
+    padding-right: 0 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Composer mode: scrolls with the ticket
+   --------------------------------------------------------------------------
+   In this mode the section becomes the scroll container and the thread and
+   composer are both content-sized inside it, so the composer sits at the end
+   of the conversation and scrolls out of view with it. The ticket bar sticks
+   to the top so the title and actions stay reachable.
+
+   The editor gets a native `resize: vertical` grabber here: with everything
+   above it content-sized, dragging the editor taller grows the whole
+   composer. Note there is deliberately no `height` declaration on the editor
+   -- an `!important` height would beat the inline height that dragging sets
+   and the grabber would do nothing.
+
+   These selectors carry an attribute on <html> as well, so they outrank the
+   docked-mode rules above without needing another !important.
+   -------------------------------------------------------------------------- */
+
+html[data-rpx-composer="inline"] [data-rpx="ticket-section"] {
+  overflow-y: auto !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="tickethead"] {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="thread"] {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* The row-resize strip sets a pixel height on the composer, which means
+   nothing once the composer is content-sized. The editor's own grabber
+   replaces it. */
+html[data-rpx-composer="inline"] [data-rpx="handle"] {
+  display: none !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="composer"],
+html[data-rpx-composer="inline"] [data-rpx="composer-collapsed"] {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="card"],
+html[data-rpx-composer="inline"] [data-rpx="wrap"],
+html[data-rpx-composer="inline"] [data-rpx="pad"],
+html[data-rpx-composer="inline"] [data-rpx="editorbox"] {
+  flex: 0 0 auto !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="wrap"] {
+  overflow: visible !important;
+}
+
+html[data-rpx-composer="inline"] [data-rpx="editor"] {
+  flex: 0 0 auto !important;
+  min-height: 168px !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  resize: vertical !important;
+  /* keeps the last line clear of the grabber */
+  padding-bottom: 20px !important;
+}
+
+/* Chrome's own grabber for a resizable div is nearly invisible on a dark
+   surface, which would hide the feature. `::-webkit-resizer` is stylable, so
+   give it the usual three-line grip. */
+html[data-rpx-composer="inline"] [data-rpx="editor"]::-webkit-resizer {
+  background-color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    transparent 0 42%,
+    hsl(var(--muted-foreground) / 0.55) 42% 50%,
+    transparent 50% 62%,
+    hsl(var(--muted-foreground) / 0.55) 62% 70%,
+    transparent 70%
+  );
+}
+
+/* Dragging the grabber writes an inline height. Clearing it belongs to docked
+   mode alone -- an `!important` height matching in scroll mode would outrank
+   that inline value and the grabber would do nothing. */
+html[data-rpx-composer="docked"] [data-rpx="editor"] {
+  height: auto !important;
+}
+
+/* --------------------------------------------------------------------------
+   11. The mode switch
+   -------------------------------------------------------------------------- */
+
+.rpx-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+
+.rpx-mode-toggle:hover {
+  background: hsl(var(--muted-foreground) / 0.12);
+  color: hsl(var(--foreground));
+}
+
+.rpx-mode-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+}
+
+.rpx-mode-toggle::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1.5px solid currentColor;
+  border-top-width: 4px;
+}
+
+/* Scroll mode: the marker becomes an outline, matching a box that moves. */
+.rpx-mode-toggle[data-state="inline"]::before {
+  border-top-width: 1.5px;
+  border-style: dashed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpx-mode-toggle {
+    transition: none !important;
+  }
+}
