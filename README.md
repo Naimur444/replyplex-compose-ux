@@ -65,9 +65,18 @@ A **Docked / Scrolls** switch in the send bar, remembered across sessions.
 - **Docked** (default) — the composer is pinned to the bottom. Resize it with
   the app's own drag strip, which this extension also makes visible on hover.
 - **Scrolls** — the composer sits at the end of the conversation and travels
-  off-screen as you scroll up, like part of the thread. The ticket bar sticks
-  to the top. The editor gets a native drag-to-grow grabber at its
-  bottom-right corner; dragging it taller grows the whole composer.
+  off-screen as you scroll up, like part of the thread. The editor gets a
+  native drag-to-grow grabber at its bottom-right corner, and it also grows on
+  its own as the draft gets longer.
+
+  That growth goes **upward**: the composer's bottom edge stays where it is and
+  the box extends into the thread, so the send bar never walks off the bottom
+  of the screen while you type. It stops growing once the composer fills the
+  window, after which the editor scrolls internally — that way the toolbar and
+  the send bar stay visible together rather than trading one for the other.
+  Growth only follows the view when the caret is in the composer or you were
+  already at the bottom, so it will not yank you if you have scrolled up to
+  read something.
 
 In Scrolls mode the thread is no longer the scroll container, so the app's own
 scroll-to-newest no longer applies — the extension scrolls the ticket to the
@@ -103,6 +112,7 @@ Everything visual lives in `compose-ux.css`. The values most worth changing:
 | --- | --- |
 | Composer drag floor, 224px. The app allows 180px, but the tabs, toolbar and send bar leave the editor ~10px there. | `[data-rpx="composer"] { min-height }` |
 | Editor's starting height in Scrolls mode, 168px | `html[data-rpx-composer="inline"] [data-rpx="editor"] { min-height }` |
+| How tall the editor may grow in Scrolls mode before it scrolls internally, `100vh - 280px`. The 280px is the composer's own furniture plus the top bar and a sliver of thread. | `html[data-rpx-composer="inline"] [data-rpx="editor"] { max-height }` |
 | Width the top-bar merge needs, 1024px. Narrower, the ticket controls need a second row and the app's two bars are left alone. | `@media (min-width: 1024px)` in section 9 |
 | Sidebar card order | `[data-rpx="sidebar-stack"] > *` and the `[data-rpx-card]` rules |
 

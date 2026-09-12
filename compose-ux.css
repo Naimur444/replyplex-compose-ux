@@ -396,10 +396,21 @@ html[data-rpx-composer="inline"] [data-rpx="ticket-section"] {
   overflow-y: auto !important;
 }
 
-html[data-rpx-composer="inline"] [data-rpx="tickethead"] {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 20 !important;
+/* Above the merge breakpoint the ticket bar is already an overlay on the app
+   bar, anchored to the main column rather than to the scrolling section, so it
+   stays put on its own and must be left alone here. Making it sticky instead
+   dropped it back into the section's flex flow where, as the only shrinkable
+   child, it was squeezed to zero height -- the bar vanished.
+
+   Below the breakpoint it really is a child of the scroller, so there it wants
+   pinning, plus a shrink guard against that same collapse. */
+@media (max-width: 1023.98px) {
+  html[data-rpx-composer="inline"] [data-rpx="tickethead"] {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    flex: 0 0 auto !important;
+  }
 }
 
 html[data-rpx-composer="inline"] [data-rpx="thread"] {
@@ -434,10 +445,16 @@ html[data-rpx-composer="inline"] [data-rpx="wrap"] {
   overflow: visible !important;
 }
 
+/* The editor has no height here, so it grows with the draft. The cap keeps
+   the composer inside the viewport: past it the editor scrolls internally,
+   which keeps the toolbar and the send bar on screen together instead of
+   trading one for the other. 280px is the composer's own furniture (tabs,
+   toolbar, send bar, padding) plus the top bar and a sliver of thread.
+   min-height wins over max-height, so a short window stays usable. */
 html[data-rpx-composer="inline"] [data-rpx="editor"] {
   flex: 0 0 auto !important;
   min-height: 168px !important;
-  max-height: none !important;
+  max-height: calc(100vh - 280px) !important;
   overflow-y: auto !important;
   resize: vertical !important;
   /* keeps the last line clear of the grabber */

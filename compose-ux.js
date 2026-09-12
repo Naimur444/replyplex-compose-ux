@@ -319,6 +319,7 @@
     const next = readMode() === DOCKED ? INLINE : DOCKED;
     writeStore(MODE_PREF, next);
     setAttr(root, MODE_ATTR, next);
+    lastComposerHeight = 0;
     apply();
 
     if (next === INLINE) {
@@ -369,6 +370,69 @@
       }
     }, { capture: true, passive: true });
   });
+
+  /* ----------------------------------------------- growing the composer up */
+
+  /**
+   * The editor has no fixed height in scroll mode, so a growing draft makes it
+   * taller. Being the last thing in the scroll container, that growth lands
+   * below the fold and takes the send bar with it -- you had to scroll down to
+   * reach Send after every few lines.
+   *
+   * Adding the same delta to the scroll position keeps the composer's bottom
+   * edge where it was, so the box appears to grow upward into the thread and
+   * the send bar never leaves. Only done while the caret is in the composer or
+   * the view was already sitting at the bottom, so it cannot yank someone who
+   * has deliberately scrolled up to read.
+   */
+  let lastComposerHeight = 0;
+
+  const growthObserver = typeof ResizeObserver === 'function'
+    ? new ResizeObserver(() => {
+        const composer = document.querySelector('[' + TAG + '="composer"]');
+        const section = document.querySelector('[' + TAG + '="ticket-section"]');
+        if (readMode() !== INLINE || !composer || !section) {
+          lastComposerHeight = 0;
+          return;
+        }
+
+        const height = composer.getBoundingClientRect().height;
+        const previous = lastComposerHeight;
+        lastComposerHeight = height;
+
+        const delta = height - previous;
+        // `previous` of 0 is the first measurement, not growth
+        if (!previous || delta <= 0) {
+          return;
+        }
+
+        const room = section.scrollHeight - section.clientHeight - section.scrollTop;
+        const wasAtBottom = room <= delta + 24;
+        if (!composer.contains(document.activeElement) && !wasAtBottom) {
+          return;
+        }
+
+        programmaticScroll = true;
+        section.scrollTop += delta;
+        requestAnimationFrame(() => { programmaticScroll = false; });
+      })
+    : null;
+
+  let observedComposer = null;
+
+  const watchGrowth = (composerRoot) => {
+    if (!growthObserver || observedComposer === composerRoot) {
+      return;
+    }
+    if (observedComposer) {
+      growthObserver.unobserve(observedComposer);
+    }
+    observedComposer = composerRoot || null;
+    lastComposerHeight = 0;
+    if (observedComposer) {
+      growthObserver.observe(observedComposer);
+    }
+  };
 
   /* ------------------------------------------------------- measured lengths */
 
@@ -533,6 +597,7 @@
       if (!composer) {
         clearTags('[' + TAG + '="composer"], [' + CC_ATTR + ']');
         dropOurButtons();
+        watchGrowth(null);
         tagCollapsedComposer(layout);
         return;
       }
@@ -550,6 +615,7 @@
       if (composer.ccbcc) {
         setTag(composer.ccbcc, 'ccbcc');
       }
+      watchGrowth(composer.root);
 
       syncModeToggle(composer, syncCcBcc(composer));
     } catch {
