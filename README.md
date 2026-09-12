@@ -1,160 +1,140 @@
+<img src="icons/icon-128.png" alt="ReplyPlex" width="88">
+
 # ReplyPlex Compose UX
 
-A Chrome extension that reshapes the ticket detail page on
-`desk.replyplex.com` — mainly to fix a composer that fought back when you
-scrolled while writing a reply.
+A Chrome extension that cleans up the ticket page in ReplyPlex, mostly so that
+writing a reply stops fighting you.
 
-Unofficial and personal; not affiliated with or endorsed by ReplyPlex. The
-icon is ReplyPlex's own mark, used so the extension is recognisable in the
-extensions list.
+It only runs on `desk.replyplex.com`. It changes how the page looks and
+behaves — it never sends anything, and it never touches your tickets or drafts.
+
+Unofficial and personal. Not affiliated with or endorsed by ReplyPlex. The
+icon is ReplyPlex's own, so the extension is easy to spot in your extensions
+list.
 
 ## What it changes
 
-### The composer scrolls once, not twice
+### 1. Writing a reply no longer scrolls the toolbar away
 
-The composer nested two scroll containers: an `overflow-y-auto` wrapper
-holding the toolbar, editor and Cc/Bcc, and the editor's own scroller capped
-by an inline `max-height: min(40vh, 360px)`. Once a draft grew past that cap
-the wrapper started scrolling too, which carried the formatting toolbar up
-and out of the card.
+**Before:** once a reply got long enough, scrolling inside the box also
+scrolled the whole compose area. The Bold / Italic / link buttons slid up out
+of sight and you had to scroll back to get them.
 
-The wrapper is now a plain flex column with the editor as its only flexible
-child, and the editor's cap is lifted. One surface scrolls; the toolbar,
-Cc/Bcc row and send bar stay put.
+**After:** only the text scrolls. The toolbar, the Cc/Bcc row and the Send bar
+stay exactly where they are, however long the reply gets.
 
-### Cc/Bcc folds away
+This happened because the compose area had two scrollbars stacked inside each
+other. Now it has one.
 
-Cc and Bcc sit behind a disclosure in the send bar, collapsed by default,
-which hands their ~44px back to the editor. The choice is remembered. It
-refuses to collapse while either field holds a recipient — and marks itself
-with a dot instead — so an address can never be hidden from you.
+### 2. Cc and Bcc fold away
 
-### An unopened composer stops reserving space
+They sit behind a small **Cc/Bcc** button in the Send bar, closed by default,
+which gives that space to the typing area. The extension remembers your choice.
 
-Before you click into it the composer is a single "Reply to …" bar, but its
-container still reserved the full height you had dragged it to (340–384px
-depending on the window), leaving a slab of dead space. It now shrinks to
-about 72px and the thread takes the rest. Your dragged height is untouched
-and comes straight back when the composer opens.
+If either field has an address in it, it stays open and shows a dot, so an
+address can never be hidden from you.
 
-### Ticket Fields above Knowledge
+### 3. No dead space before you start replying
 
-In the customer panel, Ticket Fields moves up to sit directly under the
-customer card, above Knowledge.
+**Before:** until you clicked into it, the composer was a one-line
+"Reply to…" bar, but the page still held open the full height underneath it —
+a big empty block below the conversation.
 
-### One top bar instead of two
+**After:** that space goes back to the conversation, and your composer height
+returns the moment you click into it.
 
-The page stacked a slim 48px app bar (breadcrumb, notifications, avatar,
-full width) on a 65px ticket bar (title, prev/next, assignee, tags, status,
-more) that spanned only the thread column.
+### 4. Ticket Fields moved up
 
-The app bar is the one that stays — same height, same full width,
-notifications and avatar still hard right. The breadcrumb goes, and the
-ticket bar's title and all of its controls are laid into the empty left part
-of that row. One slim full-width bar carries everything, and the thread gains
-the ticket bar's 65px.
+In the right-hand panel, **Ticket Fields** now sits just under the customer
+card, above Knowledge, so you can see it without scrolling.
 
-The title and its tag chips collapse onto a single line so the bar stays 48px
-even on a tagged ticket; a long title truncates rather than pushing controls
-out of reach.
+### 5. One top bar instead of two
 
-### Docked or scrolls-with-the-ticket
+**Before:** two stacked bars. A thin one with `Inbox > xCloud Support` plus the
+bell and your avatar, and a taller one under it with the ticket title and all
+the ticket buttons.
 
-A **Docked / Scrolls** switch in the send bar, remembered across sessions.
+**After:** one thin bar with everything on it — ticket title, previous/next,
+assignee, tags, status, more, and the panel toggle, with the bell and avatar
+still on the far right. The breadcrumb is gone.
 
-- **Docked** (default) — the composer is pinned to the bottom. Resize it with
-  the app's own drag strip, which this extension also makes visible on hover.
-- **Scrolls** — the composer sits at the end of the conversation and travels
-  off-screen as you scroll up, like part of the thread. The editor gets a
-  native drag-to-grow grabber at its bottom-right corner, and it also grows on
-  its own as the draft gets longer.
+Every button from the old second bar is still there. The conversation gets
+that whole second bar's height back.
 
-  That growth goes **upward**: the composer's bottom edge stays where it is and
-  the box extends into the thread, so the send bar never walks off the bottom
-  of the screen while you type. It stops growing once the composer fills the
-  window, after which the editor scrolls internally — that way the toolbar and
-  the send bar stay visible together rather than trading one for the other.
-  Growth only follows the view when the caret is in the composer or you were
-  already at the bottom, so it will not yank you if you have scrolled up to
-  read something.
+### 6. Two ways the composer can behave
 
-In Scrolls mode the thread is no longer the scroll container, so the app's own
-scroll-to-newest no longer applies — the extension scrolls the ticket to the
-newest message instead, and stops trying the moment you scroll by hand.
+There's a **Docked / Scrolls** button in the Send bar. Your choice is
+remembered.
 
-Note that Scrolls mode does have two scrollbars by nature: one for the ticket
-and one inside the editor. That is the point of the mode, and unlike the
-original bug the toolbar never leaves.
+**Docked** — the composer is fixed to the bottom of the screen, always in
+view. Drag the thin strip above it to make it taller or shorter. (The
+extension makes that strip visible when you hover it, which it wasn't before.)
 
-### Smaller things
+**Scrolls** — the composer sits at the end of the conversation and scrolls
+away with it, like part of the thread. Useful when you want the whole screen
+for reading.
 
-A real focus ring on the editor, larger toolbar hit targets with a clearer
-hover, comfortable line height, and a slim editor scrollbar.
+In Scrolls mode the typing box also grows by itself as you write, and it grows
+**upward** — the bottom stays put so the Send button never slides off the
+screen. Once the composer fills the window it stops growing and the text
+scrolls inside it instead, so the toolbar and the Send bar are both always
+reachable. You can also drag the bottom-right corner of the typing box to
+resize it yourself.
 
-## Install
+If you've scrolled up to read something while a reply is half-written, a
+growing draft won't drag you back down.
 
-Chrome removed the `--load-extension` command-line switch in 137, so load it
+### Smaller touches
+
+- The typing box shows a clear outline when it's focused.
+- Toolbar buttons are easier to hit and highlight properly on hover.
+- Roomier line spacing and a slimmer scrollbar in the typing box.
+
+## Installing
+
+Chrome no longer allows loading an extension from the command line, so add it
 by hand:
 
 1. Open `chrome://extensions`
-2. Turn on **Developer mode**
-3. **Load unpacked** → pick this folder
-4. Reload any open ReplyPlex tab
+2. Turn on **Developer mode** (top right)
+3. Click **Load unpacked** and pick this folder
+4. Reload any ReplyPlex tab you have open
 
-After editing `compose-ux.js` or `compose-ux.css`, hit **Reload** on the
-extension's card and reload the tab.
+After changing any file here, click **Reload** on the extension's card, then
+reload the tab.
 
-## Tuning it
+## Things you can adjust
 
-Everything visual lives in `compose-ux.css`. The values most worth changing:
+All the visual values live in `compose-ux.css`. The ones most worth changing:
 
-| What | Where |
+| What | Where to look |
 | --- | --- |
-| Composer drag floor, 224px. The app allows 180px, but the tabs, toolbar and send bar leave the editor ~10px there. | `[data-rpx="composer"] { min-height }` |
-| Editor's starting height in Scrolls mode, 168px | `html[data-rpx-composer="inline"] [data-rpx="editor"] { min-height }` |
-| How tall the editor may grow in Scrolls mode before it scrolls internally, `100vh - 280px`. The 280px is the composer's own furniture plus the top bar and a sliver of thread. | `html[data-rpx-composer="inline"] [data-rpx="editor"] { max-height }` |
-| Width the top-bar merge needs, 1024px. Narrower, the ticket controls need a second row and the app's two bars are left alone. | `@media (min-width: 1024px)` in section 9 |
-| Sidebar card order | `[data-rpx="sidebar-stack"] > *` and the `[data-rpx-card]` rules |
+| Smallest the docked composer can be dragged, currently 224px. ReplyPlex allows 180px, but at that size the typing box is only a few pixels tall. | `[data-rpx="composer"] { min-height }` |
+| How tall the typing box starts in Scrolls mode, currently 168px | `html[data-rpx-composer="inline"] [data-rpx="editor"] { min-height }` |
+| How far it can grow in Scrolls mode before the text scrolls inside it | `html[data-rpx-composer="inline"] [data-rpx="editor"] { max-height }` |
+| Screen width needed for the single top bar, currently 1024px. On narrower screens the ticket buttons need two rows, so ReplyPlex's own layout is left alone. | `@media (min-width: 1024px)` |
+| Order of the cards in the right-hand panel | `[data-rpx="sidebar-stack"]` rules |
 
-Preferences are kept in `localStorage` under `rpx.composer.mode` and
-`rpx.ccbcc.open`.
+Your two preferences (composer mode, Cc/Bcc open or closed) are stored in the
+browser under `rpx.composer.mode` and `rpx.ccbcc.open`.
 
-## How it works
+## How it avoids breaking ReplyPlex
 
-`compose-ux.js` stamps `data-rpx` attributes onto the parts of the page, and
-every CSS rule is scoped to one of those attributes. Nothing outside the
-ticket page is touched, and leaving the page clears the marks.
+Worth knowing if you ever need to change it.
 
-| Attribute | Element |
-| --- | --- |
-| `maincol`, `topbar`, `crumbs`, `topbar-actions` | app bar and its parts |
-| `tickethead`, `tickethead-title`, `tickethead-actions` | ticket bar and its parts |
-| `ticket-section`, `thread`, `handle` | thread column and the drag strip |
-| `composer` / `composer-collapsed`, `card`, `tabs`, `wrap`, `pad`, `editorbox`, `toolbar`, `editor`, `ccbcc`, `footer` | composer |
-| `sidebar`, `sidebar-stack` + `data-rpx-card` | customer panel |
+ReplyPlex is a React app, which means it owns the page and rebuilds parts of
+it constantly. So the extension never moves any of ReplyPlex's elements —
+moving one would crash the page when React later tried to remove it. Instead
+it labels elements and restyles them in place, and does the top-bar merge and
+the sidebar reorder purely with CSS positioning and ordering.
 
-Three constraints shaped the implementation:
+It also re-applies its labels the instant React rebuilds something, so you
+never see the old layout flash, and it does no work at all once the page is
+sitting still.
 
-**No app-owned node is moved.** React owns both bars and the panel cards, and
-removes children through their recorded parent — reparenting one would throw
-on unmount and take the page down. So the bar merge is absolute positioning
-and the sidebar reorder is flex `order`.
-
-**Every DOM write is guarded by a read**, and the observer watches `childList`
-only. Our own attribute writes therefore cannot retrigger it, so re-stamping
-runs synchronously inside the observer callback — a microtask, before paint —
-and a React re-render never shows a frame of unstyled layout. Once the page is
-settled the observer does no work at all.
-
-**The element walk is structural, not class-based.** It anchors on the
-drag-resize strip, which only exists on a ticket page, and walks from there.
-The Reply and Internal note tabs render the same skeleton with different
-classes on the card (`bg-card` versus an amber `bg-[#FFFBEB]`), so anchoring
-on a class silently skips one of them. Where a measurement is unavoidable —
-the app bar's height, the width of the notifications and avatar group — it is
-read from the live element and published as a CSS variable, so a badge on the
-bell cannot end up overlapping the ticket controls.
-
-If the page's shape is not the one the walk recognises, the extension removes
-its own marks and hands the page back to the app unstyled. A ReplyPlex
-redesign should therefore degrade to the stock UI rather than break it.
+It finds elements by their position in the page structure rather than by
+ReplyPlex's own class names, because the Reply and Internal note tabs use
+different classes for the same box. If a future ReplyPlex update changes the
+page enough that the extension doesn't recognise it, it removes its own
+styling and leaves you with the normal ReplyPlex interface rather than a
+broken one.
